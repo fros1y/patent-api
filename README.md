@@ -1,3 +1,8 @@
 # patent-api
 
-add description of patent-api here
+An alpha-quality set of tools for working with patent data using various formats and APIs.
+
+## EPO OPS
+Currently, the only provider of patent data is EPO OPS, including rate limiting and other features.
+
+PDF download/assembly requires Ghostscript "gs" executable to be available to assemble PDF.
