@@ -4,10 +4,16 @@ module Data.Patent.Providers.EPO
   ( getFamily
   , getBibliography
   , getCitingPatentDocs
+  , Session
+  , Credentials(..)
+  , LogLevel(..)
+  , withSession
+  , v31
   ) where
 
 import           Control.Arrow
 import           Control.Lens                                   hiding ((&))
+import           Control.Monad.Logger                           (LogLevel (..))
 import           Data.Patent.Providers.EPO.Network
 import           Data.Patent.Providers.EPO.Parsers.Bibliography
 import qualified Data.Patent.Providers.EPO.Parsers.XMLDocDB     as XMLDocDB

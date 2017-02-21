@@ -36,12 +36,16 @@ imageData citation pageNo =
   (show pageNo)
   where
     imageLink =
-      citation ^. Patent.citationCountry <> citation ^. Patent.citationSerial <>
-      (fromMaybe "%" $ citation ^. Patent.citationKind)
+      citation ^. Patent.citationCountry <> "/" <> citation ^.
+      Patent.citationSerial <>
+      "/" <>
+      (fromMaybe "%" $ citation ^. Patent.citationKind) <>
+      "/fullimage"
 
 publishedData :: Text -> Patent.Citation -> Text
 publishedData service citation =
-  "/rest-services/published-data/publication/" <> searchKey <> "/" <> service
+  "/rest-services/published-data/publication/epodoc/" <> searchKey <> "/" <>
+  service
   where
     searchKey = Citation.asEPODOC citation
 
@@ -67,6 +71,9 @@ initialThrottlingState =
 initialState :: SessionState
 initialState =
   SessionState {_oauth2Token = Nothing, _throttling = initialThrottlingState}
+
+v31 :: Text
+v31 = "https://ops.epo.org/3.1"
 
 withSession :: Credentials -> ServiceEndpoint -> LogLevel -> Session a -> IO a
 withSession creds endpoint logLevel k =

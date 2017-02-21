@@ -5,6 +5,7 @@ module Data.Patent.Providers.EPO.PDF
   ( getCitationInstances
   , downloadCitationInstance
   , PageProgress
+  , Instance
   , silentProgress
   ) where
 
@@ -137,7 +138,7 @@ downloadCitationPageAsPDF :: Patent.Citation
 downloadCitationPageAsPDF citation path progressFn page = do
   url <- buildURL $ imageData citation page
   let file =
-        (T.pack path) <> "/" <> (Format.asEPODOC citation) <> "/" <>
+        (T.pack path) <> "/" <> (Format.asEPODOC citation) <> "-" <>
         (T.justifyRight 5 '0' (show page)) <>
         ".pdf"
   downloadFile url (T.unpack file)
