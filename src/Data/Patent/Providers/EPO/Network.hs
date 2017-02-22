@@ -130,7 +130,7 @@ authenticate = do
 search :: Text -> Session LByteString
 search params = do
   url <-
-    buildURL [i|/rest-services/published-data/search?q=${params}&Range=0-100|]
+    buildURL [i|/rest-services/published-data/search?q=${params}&Range=1-100|]
   rawData <- throttledQuery url
   return $ rawData
 
