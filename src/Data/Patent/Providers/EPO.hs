@@ -52,8 +52,8 @@ getCitingPatentDocs citation = do
   rawData <- search [i|ct=${epoString}|]
   let xml = XML.parseLBS_ XML.def rawData
       cursor = XML.fromDocument xml
-      epodocs =
+      citations =
         XMLDocDB.parseXMLtoCitation <$>
         (cursor $// XML.laxElement "document-id" >=>
          XML.attributeIs "document-id-type" "docdb")
-  return epodocs
+  return citations
