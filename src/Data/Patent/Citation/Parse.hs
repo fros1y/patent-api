@@ -101,27 +101,19 @@ numberSignalPhrase =
   Parsec.choice
     [Parsec.try $ Parsec.string "No", Parsec.try $ Parsec.string "Number"]
 
-imperialYear :: Parsec.Parsec Text () Int
-imperialYear =
-  foldl' (\a int -> a * 10 + Data.Char.digitToInt int) 0 <$>
-  Parsec.count 2 Parsec.digit
-
 jpxNumber :: Parsec.Parsec Text () Citation
 jpxNumber = do
-  emperor <- Parsec.string "JPS" <|> Parsec.string "JPH"
-  year <- imperialYear
-  serialPart <- Parsec.count 6 Parsec.digit
+  emperor <-
+    Parsec.choice
+      [Parsec.try $ Parsec.string "JPS", Parsec.try $ Parsec.string "JPH"]
+  serialPart <- Parsec.many1 Parsec.digit
+  kindPart <- Parsec.optionMaybe (Parsec.many1 Parsec.anyChar)
   -- http://www.epo.org/searching-for-patents/helpful-resources/asian/japan/numbering.html
-  let offset =
-        if emperor == "JPS"
-          then 1925
-          else 1988
-      numbers = pack $ show (year + offset) ++ serialPart
   return $
     Citation
-    { _citationCountry = "JP"
-    , _citationSerial = numbers
-    , _citationKind = Just "A"
+    { _citationCountry = pack emperor
+    , _citationSerial = pack serialPart
+    , _citationKind = pack <$> kindPart
     , _citationPubDate = Nothing
     }
 
@@ -139,8 +131,8 @@ patentFormats :: Parsec.Parsec Text () Citation
 patentFormats =
   Parsec.choice
     [ Parsec.try usPubAppFormat
-    , Parsec.try epodocFormat
     , Parsec.try jpxNumber
+    , Parsec.try epodocFormat
     , Parsec.try messyUSPatent
     , Parsec.try lensLikeFormat
     ]
