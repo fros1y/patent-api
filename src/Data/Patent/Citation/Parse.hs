@@ -103,16 +103,17 @@ numberSignalPhrase =
 
 jpxNumber :: Parsec.Parsec Text () Citation
 jpxNumber = do
+  _ <- Parsec.string "JP"
   emperor <-
     Parsec.choice
-      [Parsec.try $ Parsec.string "JPS", Parsec.try $ Parsec.string "JPH"]
+      [Parsec.try $ Parsec.string "S", Parsec.try $ Parsec.string "H"]
   serialPart <- Parsec.many1 Parsec.digit
   kindPart <- Parsec.optionMaybe (Parsec.many1 Parsec.anyChar)
   -- http://www.epo.org/searching-for-patents/helpful-resources/asian/japan/numbering.html
   return $
     Citation
-    { _citationCountry = pack emperor
-    , _citationSerial = pack serialPart
+    { _citationCountry = "JP"
+    , _citationSerial = pack $ emperor <> serialPart
     , _citationKind = pack <$> kindPart
     , _citationPubDate = Nothing
     }
