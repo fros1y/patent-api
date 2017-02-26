@@ -10,7 +10,9 @@ import           Control.Monad.Catch             (Handler (..))
 import           Control.Monad.Logger
 import qualified Control.Retry                   as Retry
 import           Data.Aeson.Lens
+import qualified Data.ByteString                 as B
 import           Data.Default                    (def)
+import qualified Data.List                       as List
 import qualified Data.Map.Strict                 as Map
 import qualified Data.Patent.Citation.Format     as Citation
 import           Data.Patent.Providers.EPO.Types
@@ -20,6 +22,8 @@ import qualified Data.Text                       as T
 import qualified Data.Text.Encoding              as T
 import           Lib.Prelude
 import qualified Network.HTTP.Client             as NetC
+import qualified Network.HTTP.Types.Header       as NetH
+import qualified Network.HTTP.Types.Status       as NetS
 import qualified Network.Wreq                    as Wreq
 import qualified Network.Wreq.Session            as WreqS
 import           Protolude
@@ -44,10 +48,10 @@ imageData citation pageNo =
 
 publishedData :: Text -> Patent.Citation -> Text
 publishedData service citation =
-  "/rest-services/published-data/publication/epodoc/" <> searchKey <> "/" <>
+  "/rest-services/published-data/publication/docdb/" <> searchKey <> "/" <>
   service
   where
-    searchKey = Citation.asEPODOC citation
+    searchKey = Citation.asDOCDB citation
 
 familyData :: Patent.Citation -> Text
 familyData citation = "/rest-services/published-data/publication/" <> searchKey
@@ -139,15 +143,23 @@ throttledQuery url = do
   potentiallyThrottle (quotaTypeByURL url)
   query url
 
+isAuthenticationProblem :: Wreq.Response body -> Bool
+isAuthenticationProblem r =
+  ((NetS.statusCode (NetC.responseStatus r) == 400) && "access_token_expired" `B.isPrefixOf`
+   authHeader)
+  where
+    headers = NetC.responseHeaders r
+    authHeader = fromMaybe "" $ List.lookup NetH.hWWWAuthenticate headers
+
 handleError :: NetC.HttpException -> Session Bool
-handleError (NetC.HttpExceptionRequest _ _) = do
-  $(logDebug) "Trying reauthentication."
-  oauth2Token .= Nothing
-  void $ authenticate
-  return True
-handleError (NetC.InvalidUrlException _ _) = do
-  $(logDebug) "Invalid URL"
-  return False
+handleError (NetC.HttpExceptionRequest _ (NetC.StatusCodeException r _))
+  | isAuthenticationProblem r = do
+    $(logDebug) "Token expired. Trying reauthentication."
+    oauth2Token .= Nothing
+    void $ authenticate
+    return True
+  | otherwise = return False
+handleError _ = return False
 
 query :: Text -> Session LByteString
 query url = do
@@ -193,13 +205,16 @@ potentiallyThrottle quotaType = do
   delayForTrafficLight $ status ^. trafficStatus
   delayForRate quotaType $ status ^. requestsRemaining
 
+seconds :: Int
+seconds = 1000000
+
 delayForServiceStatus :: ServiceState -> Session ()
 delayForServiceStatus Overloaded = do
   $(logWarn) "System: Overloaded."
-  liftIO $ threadDelay $ 2 * 1000
+  liftIO $ threadDelay $ 10 * seconds
 delayForServiceStatus Busy = do
   $(logInfo) "System: Busy."
-  liftIO $ threadDelay 100
+  liftIO $ threadDelay $ 1 * seconds
 delayForServiceStatus Idle = do
   $(logDebug) "System: Idle."
   return ()
@@ -207,13 +222,13 @@ delayForServiceStatus Idle = do
 delayForTrafficLight :: ServiceTraffic -> Session ()
 delayForTrafficLight Black = do
   $(logWarn) "Service Traffic: Black"
-  liftIO $ threadDelay $ 60 * 1000
+  liftIO $ threadDelay $ 60 * seconds
 delayForTrafficLight Red = do
   $(logWarn) "Service Traffic: Red"
-  liftIO $ threadDelay $ 30 * 1000
+  liftIO $ threadDelay $ 20 * seconds
 delayForTrafficLight Yellow = do
   $(logInfo) "Service Traffic: Yellow"
-  liftIO $ threadDelay $ 10 * 1000
+  liftIO $ threadDelay $ 5 * seconds
 delayForTrafficLight Green = do
   $(logDebug) "Service Traffic: Green"
   return ()
@@ -221,15 +236,20 @@ delayForTrafficLight Green = do
 delayForRate :: ServiceQuota -> Int -> Session ()
 delayForRate service rate = do
   let maxRate = maxQuota service
-      delay =
-        floor $
-        (((60.0 / fromIntegral rate) - (60.0 / fromIntegral maxRate)) * 1000.0 :: Double)
+      maxRate' :: Double
+      maxRate' = fromIntegral maxRate
+      rate' :: Double
+      rate' = fromIntegral rate
+      delay' :: Double
+      delay' = ((maxRate' - rate') / maxRate') * 30
+      delay :: Int
+      delay = floor $ delay' * fromIntegral seconds
       percent :: Int
       percent =
         floor
           ((fromIntegral rate :: Double) / (fromIntegral maxRate :: Double) *
            100)
-  $(logDebug) [i|Service quota at ${percent}%. Delaying ${delay} milliseconds|]
+  $(logDebug) [i|Service quota at ${percent}%. Delaying ${delay'} seconds|]
   liftIO $ threadDelay delay
 
 updateThrottling :: Text -> Session ()
