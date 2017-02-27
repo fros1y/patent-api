@@ -107,7 +107,7 @@ withSession :: Credentials -> ServiceEndpoint -> LogLevel -> Session a -> IO a
 withSession creds endpoint logLevel k
   -- FIXME: Why does this require noVerify to work?
  =
-  WreqS.withSessionControl Nothing noVerifyTlsManagerSettings $ \wreqSess ->
+  WreqS.withSessionControl Nothing sessionSettings $ \wreqSess ->
     fst <$>
     runStateT
       (runReaderT
