@@ -9,6 +9,7 @@ module Data.Patent.Providers.EPO
   , LogLevel(..)
   , withSession
   , v31
+  , v32
   ) where
 
 import           Control.Arrow

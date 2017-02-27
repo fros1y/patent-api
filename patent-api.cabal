@@ -35,6 +35,7 @@ library
                      , exceptions
                      , here
                      , http-client >= 0.4
+                     , http-client-tls
                      , http-types
                      , io-streams
                      , lens >= 4.13
@@ -49,6 +50,7 @@ library
                      , xml-conduit
                      , string-conversions >= 0.4
                      , turtle
+                     , connection
 
 
   default-language:    Haskell2010

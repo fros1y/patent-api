@@ -21,7 +21,9 @@ import           Data.String.Here
 import qualified Data.Text                       as T
 import qualified Data.Text.Encoding              as T
 import           Lib.Prelude
+import qualified Network.Connection              as NetC
 import qualified Network.HTTP.Client             as NetC
+import qualified Network.HTTP.Client.TLS         as NetC
 import qualified Network.HTTP.Types.Header       as NetH
 import qualified Network.HTTP.Types.Status       as NetS
 import qualified Network.Wreq                    as Wreq
@@ -46,12 +48,17 @@ imageData citation pageNo =
       (fromMaybe "%" $ citation ^. Patent.citationKind) <>
       "/fullimage"
 
+buildPublicationKey :: Patent.Citation -> Text
+buildPublicationKey citation =
+  if (isJust $ citation ^. Patent.citationKind)
+    then "docdb/" <> Citation.asDOCDB citation
+    else "epodoc/" <> Citation.asEPODOC citation
+
 publishedData :: Text -> Patent.Citation -> Text
 publishedData service citation =
-  "/rest-services/published-data/publication/docdb/" <> searchKey <> "/" <>
-  service
+  "/rest-services/published-data/publication/" <> searchKey <> "/" <> service
   where
-    searchKey = Citation.asDOCDB citation
+    searchKey = buildPublicationKey citation
 
 familyData :: Patent.Citation -> Text
 familyData citation = "/rest-services/published-data/publication/" <> searchKey
@@ -79,9 +86,28 @@ initialState =
 v31 :: Text
 v31 = "https://ops.epo.org/3.1"
 
+v32 :: Text
+v32 = "https://ops.epo.org/3.2"
+
+noVerifyTlsManagerSettings :: NetC.ManagerSettings
+noVerifyTlsManagerSettings = NetC.mkManagerSettings noVerifyTlsSettings Nothing
+
+noVerifyTlsSettings :: NetC.TLSSettings
+noVerifyTlsSettings =
+  NetC.TLSSettingsSimple
+  { NetC.settingDisableCertificateValidation = True
+  , NetC.settingDisableSession = True
+  , NetC.settingUseServerName = False
+  }
+
+sessionSettings :: NetC.ManagerSettings
+sessionSettings = NetC.tlsManagerSettings
+
 withSession :: Credentials -> ServiceEndpoint -> LogLevel -> Session a -> IO a
-withSession creds endpoint logLevel k =
-  WreqS.withAPISession $ \wreqSess ->
+withSession creds endpoint logLevel k
+  -- FIXME: Why does this require noVerify to work?
+ =
+  WreqS.withSessionControl Nothing noVerifyTlsManagerSettings $ \wreqSess ->
     fst <$>
     runStateT
       (runReaderT
@@ -166,7 +192,10 @@ query url = do
   token <- authenticate
   settings <- ask
   let handlers = [const $ Handler $ handleError]
-      opts = Wreq.defaults & Wreq.auth ?~ Wreq.oauth2Bearer (_rawToken token)
+      opts =
+        Wreq.defaults & Wreq.auth ?~ Wreq.oauth2Bearer (_rawToken token) &
+        Wreq.header "Accept" .~
+        ["application/xml"]
   $(logDebug) [i|GET: ${url}|]
   r <-
     Retry.recovering
