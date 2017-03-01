@@ -62,7 +62,10 @@ getCitationInstances strictly citation = do
         | otherwise = True
   $(logDebug)
     [i|Found ${length rawInstances} total instances. After filtering, ${length filteredInstances} are left.|]
-  return filteredInstances
+  return $
+    if (null filteredInstances)
+      then rawInstances
+      else filteredInstances
 
 imageLinkToCitation :: Text -> Maybe Patent.Citation
 imageLinkToCitation imageLink =
@@ -82,6 +85,7 @@ imageLinkToCitation imageLink =
         , Patent._citationSerial = T.pack serialPart
         , Patent._citationKind = Just $ T.pack kindPart
         , Patent._citationPubDate = Nothing
+        , Patent._citationSpecialCase = Nothing
         }
 
 getLinksAndCounts :: XML.Document -> [Instance]
