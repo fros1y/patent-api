@@ -23,6 +23,7 @@ usPubAppFormat = do
     , _citationSerial = pack serialPart
     , _citationKind = pack <$> kindPart
     , _citationPubDate = Nothing
+    , _citationSpecialCase = Just $ EPO_US_Pub_App . pack $ (year <> serialNo)
     }
 
 epodocFormat :: Parsec.Parsec Text () Citation
@@ -36,6 +37,7 @@ epodocFormat = do
     , _citationSerial = pack serialPart
     , _citationKind = pack <$> kindPart
     , _citationPubDate = Nothing
+    , _citationSpecialCase = Nothing
     }
 
 messyUSPatent :: Parsec.Parsec Text () Citation
@@ -53,6 +55,7 @@ messyUSPatent = do
     , _citationSerial = serialNo
     , _citationKind = Nothing
     , _citationPubDate = Nothing
+    , _citationSpecialCase = Nothing
     }
 
 lensLikeFormat :: Parsec.Parsec Text () Citation
@@ -68,6 +71,7 @@ lensLikeFormat = do
     , _citationSerial = pack serialPart
     , _citationKind = Just $ pack kindPart
     , _citationPubDate = Nothing
+    , _citationSpecialCase = Nothing
     }
 
 countryPhrase :: Parsec.Parsec Text () ()
@@ -116,6 +120,7 @@ jpxNumber = do
     , _citationSerial = pack $ emperor <> serialPart
     , _citationKind = pack <$> kindPart
     , _citationPubDate = Nothing
+    , _citationSpecialCase = Just JPX
     }
 
 triplet :: Parsec.ParsecT Text u Identity [Char]

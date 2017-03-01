@@ -12,6 +12,7 @@ parseAttributesToCitation cursor =
   , Patent._citationSerial = serialNo
   , Patent._citationKind = Just kindCode
   , Patent._citationPubDate = Nothing
+  , Patent._citationSpecialCase = Nothing
   }
   where
     cc = headDef "" $ XML.laxAttribute "country" cursor
@@ -25,6 +26,7 @@ parseXMLtoCitation cursor =
   , Patent._citationSerial = serialNo
   , Patent._citationKind = Just kindCode
   , Patent._citationPubDate = Nothing
+  , Patent._citationSpecialCase = Nothing
   }
   where
     cc = headDef "" $ cursor $/ XML.laxElement "country" &// XML.content
