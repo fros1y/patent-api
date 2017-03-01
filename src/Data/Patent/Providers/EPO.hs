@@ -14,6 +14,7 @@ module Data.Patent.Providers.EPO
 
 import           Control.Arrow
 import           Control.Lens                                   hiding ((&))
+import qualified Control.Monad.Catch                            as Catch
 import           Control.Monad.Logger                           (LogLevel (..))
 import           Data.Patent.Providers.EPO.Network
 import           Data.Patent.Providers.EPO.Parsers.Bibliography
@@ -50,11 +51,14 @@ getCitingPatentDocs citation = do
   let epoString =
         (citation ^. Patent.citationCountry) <>
         (citation ^. Patent.citationSerial)
-  rawData <- search [i|ct=${epoString}|]
-  let xml = XML.parseLBS_ XML.def rawData
-      cursor = XML.fromDocument xml
-      citations =
-        XMLDocDB.parseXMLtoCitation <$>
-        (cursor $// XML.laxElement "document-id" >=>
-         XML.attributeIs "document-id-type" "docdb")
-  return citations
+  rawData <- Catch.tryJust handleNoResults $ search [i|ct=${epoString}|]
+  case rawData of
+    Right rawData' -> do
+      let xml = XML.parseLBS_ XML.def rawData'
+          cursor = XML.fromDocument xml
+          citations =
+            XMLDocDB.parseXMLtoCitation <$>
+            (cursor $// XML.laxElement "document-id" >=>
+             XML.attributeIs "document-id-type" "docdb")
+      return citations
+    Left _ -> return []

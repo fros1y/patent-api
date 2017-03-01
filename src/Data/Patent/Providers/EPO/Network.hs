@@ -177,6 +177,15 @@ isAuthenticationProblem r =
     headers = NetC.responseHeaders r
     authHeader = fromMaybe "" $ List.lookup NetH.hWWWAuthenticate headers
 
+isNoResults :: Wreq.Response body -> ByteString -> Bool
+isNoResults r c = (NetS.statusCode (NetC.responseStatus r) == 404)
+
+handleNoResults :: NetC.HttpException -> Maybe Text
+handleNoResults (NetC.HttpExceptionRequest _ (NetC.StatusCodeException r c))
+  | isNoResults r c = Just "No Results"
+  | otherwise = Nothing
+handleNoResults _ = Nothing
+
 handleError :: NetC.HttpException -> Session Bool
 handleError (NetC.HttpExceptionRequest _ (NetC.StatusCodeException r _))
   | isAuthenticationProblem r = do
