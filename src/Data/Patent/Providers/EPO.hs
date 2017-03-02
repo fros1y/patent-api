@@ -1,13 +1,17 @@
 {-# LANGUAGE QuasiQuotes #-}
 
 module Data.Patent.Providers.EPO
+    -- * Retrieval functions
   ( getFamily
   , getBibliography
   , getCitingPatentDocs
+  -- * System types
   , Session
   , Credentials(..)
   , LogLevel(..)
+  -- * Session manager
   , withSession
+  -- * EPO OPS API Versions
   , v31
   , v32
   ) where
@@ -27,12 +31,14 @@ import qualified Text.XML                                       as XML
 import           Text.XML.Cursor                                (($//))
 import qualified Text.XML.Cursor                                as XML
 
+-- | Queries EPO OPS for a 'Bibliography' based on a 'Citation' and a (preferred) language code.
 getBibliography :: Text -> Patent.Citation -> Session Patent.Bibliography
 getBibliography prefLang citation = do
   url <- buildURL $ publishedData "biblio" citation
   rawData <- throttledQuery url
   return $ (parseBibliography prefLang) <<< XML.parseLBS_ XML.def $ rawData
 
+-- | Retrieves 'Citation's related to a given 'Citation' by a simple family grouping in EPO OPS data.
 getFamily :: Patent.Citation -> Session [Patent.Citation]
 getFamily citation = do
   url <- buildURL $ familyData citation
@@ -46,6 +52,7 @@ parseFamily xml = family
     exchangeDocuments = cursor $// XML.laxElement "exchange-document"
     family = XMLDocDB.parseAttributesToCitation <$> exchangeDocuments
 
+-- | Searches EPO OPS for other 'Citation's that contain a recorded citation to the given 'Citation'
 getCitingPatentDocs :: Patent.Citation -> Session [Patent.Citation]
 getCitingPatentDocs citation = do
   let epoString =

@@ -8,6 +8,7 @@ import           Control.Lens.TH
 
 type Date = Text
 
+-- | A Citation stores sufficient information to either uniquely identify a specific patent document, or if Kind is not supplied, a number of patent documents associated with a given country code and serial
 data Citation = Citation
   { _citationCountry     :: Text
   , _citationSerial      :: Text
@@ -16,6 +17,7 @@ data Citation = Citation
   , _citationSpecialCase :: Maybe SpecialCase
   } deriving (Show, Eq, Ord)
 
+-- | Some Citation formats need special treatment for the EPO API, and so may be tagged at parse, etc.
 data SpecialCase
   = EPO_US_Pub_App Text
   | JPX

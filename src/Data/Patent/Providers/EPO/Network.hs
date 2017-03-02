@@ -104,9 +104,7 @@ sessionSettings :: NetC.ManagerSettings
 sessionSettings = NetC.tlsManagerSettings
 
 withSession :: Credentials -> ServiceEndpoint -> LogLevel -> Session a -> IO a
-withSession creds endpoint logLevel k
-  -- FIXME: Why does this require noVerify to work?
- =
+withSession creds endpoint logLevel k =
   WreqS.withSessionControl Nothing sessionSettings $ \wreqSess ->
     fst <$>
     runStateT
@@ -178,7 +176,7 @@ isAuthenticationProblem r =
     authHeader = fromMaybe "" $ List.lookup NetH.hWWWAuthenticate headers
 
 isNoResults :: Wreq.Response body -> ByteString -> Bool
-isNoResults r c = (NetS.statusCode (NetC.responseStatus r) == 404)
+isNoResults r _ = (NetS.statusCode (NetC.responseStatus r) == 404)
 
 handleNoResults :: NetC.HttpException -> Maybe Text
 handleNoResults (NetC.HttpExceptionRequest _ (NetC.StatusCodeException r c))
@@ -193,8 +191,8 @@ handleError (NetC.HttpExceptionRequest _ (NetC.StatusCodeException r _))
     oauth2Token .= Nothing
     void $ authenticate
     return True
-  | otherwise = return False
-handleError _ = return False
+  | otherwise = return True
+handleError _ = return True
 
 query :: Text -> Session LByteString
 query url = do

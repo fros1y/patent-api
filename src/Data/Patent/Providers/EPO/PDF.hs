@@ -2,8 +2,10 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Patent.Providers.EPO.PDF
+    -- * Retrieval functions
   ( getCitationInstances
   , downloadCitationInstance
+  -- * Types and defaults
   , PageProgress
   , Instance
   , silentProgress
