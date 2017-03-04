@@ -16,6 +16,7 @@ module Data.Patent.Providers.EPO.PDF
   ) where
 
 import           Control.Lens.Operators            hiding ((&))
+import qualified Control.Monad.Catch               as Catch
 import           Control.Monad.Logger
 import qualified Data.Patent.Citation.Format       as Format
 import           Data.Patent.Providers.EPO.Network
@@ -51,8 +52,8 @@ getInstances citation = do
 -- specifically requesting them.
 getCitationInstances :: Bool -> Patent.Citation -> EPO.Session [EPO.Instance]
 getCitationInstances strictly citation = do
-  imagedata <- getInstances citation
-  let rawInstances = getLinksAndCounts imagedata
+  imagedata <- Catch.tryJust handleNoResults $ getInstances citation
+  let rawInstances = either (const []) getLinksAndCounts imagedata
       filteredInstances = filter allow rawInstances
       unwantedKind e (c, k) =
         e ^. Patent.citationCountry == c &&
