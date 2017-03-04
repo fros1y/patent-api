@@ -7,7 +7,11 @@ module Data.Patent.Providers.EPO.PDF
   , downloadCitationInstance
   -- * Types and defaults
   , PageProgress
-  , Instance
+  , EPO.Instance
+  , EPO.numPages
+  , EPO.fullCitation
+  , EPO.bookmarkTitle
+  , EPO.bookmarkPage
   , silentProgress
   ) where
 
@@ -25,15 +29,13 @@ import qualified System.IO.Streams                 as S
 import qualified System.IO.Temp                    as Temp
 import qualified Text.Parsec                       as Parsec
 import qualified Text.XML                          as XML
-import           Text.XML.Cursor                   (($//), (>=>))
+import           Text.XML.Cursor                   (($/), ($//), (>=>))
 import qualified Text.XML.Cursor                   as XML
 import qualified Turtle                            hiding ((<>))
 
 type TotalPages = Int
 
 type CurrPage = Int
-
-type Instance = (Int, Patent.Citation)
 
 type PageProgress = TotalPages -> CurrPage -> IO ()
 
@@ -47,7 +49,7 @@ getInstances citation = do
 -- Strictness determines whether non-equivalent Citation are returned
 -- Note that some likely unwanted kind codes (notably EP A3 and EP A4 search reports) are excluded unless you were
 -- specifically requesting them.
-getCitationInstances :: Bool -> Patent.Citation -> EPO.Session [Instance]
+getCitationInstances :: Bool -> Patent.Citation -> EPO.Session [EPO.Instance]
 getCitationInstances strictly citation = do
   imagedata <- getInstances citation
   let rawInstances = getLinksAndCounts imagedata
@@ -56,7 +58,7 @@ getCitationInstances strictly citation = do
         e ^. Patent.citationCountry == c &&
         (citation ^. Patent.citationKind /= Just k &&
          e ^. Patent.citationKind == Just k)
-      allow (l, e)
+      allow EPO.Instance {EPO._numPages = l, EPO._fullCitation = e}
         | l <= 1 = False
         | strictly && not (e `Format.equivalentCitation` citation) = False
         | e `unwantedKind` ("EP", "A3") = False -- exclude search reports, unless we ask for them
@@ -90,24 +92,37 @@ imageLinkToCitation imageLink =
         , Patent._citationSpecialCase = Nothing
         }
 
-getLinksAndCounts :: XML.Document -> [Instance]
+getBookmark :: XML.Cursor -> Maybe EPO.Bookmark
+getBookmark cursor = liftM2 EPO.Bookmark mark page
+  where
+    page :: Maybe Int
+    page =
+      join $
+      (readMaybe . T.unpack) <$> headMay (XML.attribute "start-page" cursor)
+    mark :: Maybe Text
+    mark = headMay $ XML.attribute "name" cursor
+
+getLinksAndCounts :: XML.Document -> [EPO.Instance]
 getLinksAndCounts xml = catMaybes (getLinkAndCount <$> instances)
   where
     cursor = XML.fromDocument xml
     instances =
       cursor $// XML.laxElement "document-instance" >=>
       XML.attributeIs "desc" "FullDocument"
-    getLinkAndCount instanceCursor =
-      let instanceEPODOC =
-            imageLinkToCitation $
-            headDef "" (XML.attribute "link" instanceCursor)
-          pageCount =
-            join $
-            (readMaybe . T.unpack) <$>
-            headMay (XML.attribute "number-of-pages" instanceCursor)
-      in case (pageCount, instanceEPODOC) of
-           (Just pg, Just iEPODOC) -> Just (pg, iEPODOC)
-           (_, _)                  -> Nothing
+
+getLinkAndCount :: XML.Cursor -> Maybe EPO.Instance
+getLinkAndCount instanceCursor =
+  (liftM3 EPO.Instance pageCount instanceEPODOC (Just bookmarks))
+  where
+    instanceEPODOC =
+      imageLinkToCitation $ headDef "" (XML.attribute "link" instanceCursor)
+    pageCount =
+      join $
+      (readMaybe . T.unpack) <$>
+      headMay (XML.attribute "number-of-pages" instanceCursor)
+    bookmarks =
+      catMaybes $
+      getBookmark <$> (instanceCursor $/ XML.laxElement "document-section")
 
 -- | Convenience predefinition for silent PageProgress updates.
 silentProgress :: PageProgress
@@ -120,21 +135,35 @@ silentProgress _ _ = return ()
 -- directory is removed.
 --
 -- The first parameter, PageProgress, allows for easier progress reporting.
-downloadCitationInstance :: PageProgress -> Instance -> EPO.Session ()
-downloadCitationInstance progressFn (count, instanceCitation) = do
-  let pages = [1 .. count]
-      epokey = Format.asEPODOC instanceCitation
+downloadCitationInstance :: PageProgress -> EPO.Instance -> EPO.Session ()
+downloadCitationInstance progressFn citeInstance = do
+  let pages = [1 .. citeInstance ^. EPO.numPages]
+      epokey = Format.asEPODOC $ citeInstance ^. EPO.fullCitation
       output = epokey <> ".pdf"
   _ <-
     Temp.withTempDirectory "." "pat-download." $ \tmpDir -> do
       mapM_
-        (downloadCitationPageAsPDF instanceCitation tmpDir (progressFn count))
+        (downloadCitationPageAsPDF
+           (citeInstance ^. EPO.fullCitation)
+           tmpDir
+           (progressFn (citeInstance ^. EPO.numPages)))
         pages
+      liftIO $ writeBookmarks (citeInstance ^. EPO.bookmarkSections) tmpDir
       liftIO $
         Turtle.shell
-          [i|gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=${output} "${tmpDir}"/*.pdf|]
+          [i|gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=${output} "${tmpDir}"/*.pdf "${tmpDir}"/pdfmarks|]
           Turtle.empty
   return ()
+
+writeBookmarks :: [EPO.Bookmark] -> FilePath -> IO ()
+writeBookmarks marks path = writeFile (path <> "/" <> "pdfmarks") contents
+  where
+    contents = mconcat $ map writeBookmark marks
+
+writeBookmark :: EPO.Bookmark -> Text
+writeBookmark mark =
+  [i|[/Title (${mark ^. EPO.bookmarkTitle}) /Page ${mark ^. EPO.bookmarkPage} /OUT pdfmark|] <>
+  "\n"
 
 downloadCitationPageAsPDF :: Patent.Citation
                           -> [Char]

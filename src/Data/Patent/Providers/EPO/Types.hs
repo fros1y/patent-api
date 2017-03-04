@@ -7,6 +7,7 @@ import           Control.Lens.TH      (makeLenses)
 import           Control.Monad.Catch  (MonadCatch, MonadMask, MonadThrow)
 import           Control.Monad.Logger (LoggingT, MonadLogger)
 import           Data.Default
+import           Data.Patent.Types
 import           Network.Wreq.Session as Wreq
 import           Protolude
 
@@ -79,6 +80,21 @@ newtype Session a = Session
              , MonadMask
              , MonadLogger
              )
+
+data Instance = Instance
+  { _numPages         :: Int
+  , _fullCitation     :: Citation
+  , _bookmarkSections :: [Bookmark]
+  }
+
+data Bookmark = Bookmark
+  { _bookmarkTitle :: Text
+  , _bookmarkPage  :: Int
+  }
+
+makeLenses ''Bookmark
+
+makeLenses ''Instance
 
 makeLenses ''Settings
 
