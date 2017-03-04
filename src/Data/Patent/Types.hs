@@ -1,3 +1,12 @@
+{-|
+Module      : Data.Patent.Types
+Description : Types common to the Data.Patent library, particularly Citation and Bibliography.
+Copyright   : (c) Martin Galese, 2017
+License     : AGPL-3
+Maintainer  : martin@galese.net
+Stability   : experimental
+Portability : POSIX
+-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Data.Patent.Types where

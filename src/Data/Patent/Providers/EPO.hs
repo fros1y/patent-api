@@ -1,7 +1,15 @@
 {-# LANGUAGE QuasiQuotes #-}
 
+{-|
+Module      : Data.Patent.Providers.EPO
+Description : High-level API for requesting content from EPO OPS system.
+Copyright   : (c) Martin Galese, 2017
+License     : AGPL-3
+Maintainer  : martin@galese.net
+Stability   : experimental
+Portability : POSIX
+-}
 module Data.Patent.Providers.EPO
-    -- * Retrieval functions
   ( getFamily
   , getBibliography
   , getCitingPatentDocs

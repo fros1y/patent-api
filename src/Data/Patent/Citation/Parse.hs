@@ -1,8 +1,16 @@
+{-|
+Module      : Data.Patent.Citation.Parse
+Description : Parses different representations of patent document numbers, particular US formats, into standardized format.
+Copyright   : (c) Martin Galese, 2017
+License     : AGPL-3
+Maintainer  : martin@galese.net
+Stability   : experimental
+Portability : POSIX
+-}
 module Data.Patent.Citation.Parse
   ( parseCitation
   ) where
 
-import           Data.Char         (digitToInt)
 import           Data.Patent.Types
 import           Data.Text         (pack, unpack)
 import           Protolude

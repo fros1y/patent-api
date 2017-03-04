@@ -1,8 +1,15 @@
+{-|
+Module      : Data.Patent.Citation.Format
+Description : Formats Citations into different textual representations.
+Copyright   : (c) Martin Galese, 2017
+License     : AGPL-3
+Maintainer  : martin@galese.net
+Stability   : experimental
+Portability : POSIX
+-}
 module Data.Patent.Citation.Format
-   -- * Formatters
   ( asEPODOC
   , asDOCDB
-  -- * Format-like comparison
   , equivalentCitation
   ) where
 

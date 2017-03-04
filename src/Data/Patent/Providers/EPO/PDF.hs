@@ -1,8 +1,16 @@
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+{-|
+Module      : Data.Patent.Providers.EPO.PDF
+Description : High-level API for retrieving PDFs of patent documents from EPO OPS system.
+Copyright   : (c) Martin Galese, 2017
+License     : AGPL-3
+Maintainer  : martin@galese.net
+Stability   : experimental
+Portability : POSIX
+-}
 module Data.Patent.Providers.EPO.PDF
-    -- * Retrieval functions
   ( getCitationInstances
   , downloadCitationInstance
   -- * Types and defaults
