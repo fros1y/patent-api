@@ -10,7 +10,7 @@ Stability   : experimental
 Portability : POSIX
 -}
 module Data.Patent.Providers.EPO
-  ( getFamily
+  ( getFamilyBibliographies
   , getBibliography
   , getCitingPatentDocs
   -- * System types
@@ -46,19 +46,20 @@ getBibliography prefLang citation = do
   rawData <- throttledQuery url
   return $ (parseBibliography prefLang) <<< XML.parseLBS_ XML.def $ rawData
 
--- | Retrieves 'Citation's related to a given 'Citation' by a simple family grouping in EPO OPS data.
-getFamily :: Patent.Citation -> Session [Patent.Citation]
-getFamily citation = do
+-- | Retrieves 'Bibliography's related to a given 'Citation' by a simple family grouping in EPO OPS data.
+getFamilyBibliographies :: Text -> Patent.Citation -> Session Family
+getFamilyBibliographies prefLang citation = do
   url <- buildURL $ familyData citation
   rawData <- throttledQuery url
-  return $ parseFamily <<< XML.parseLBS_ XML.def $ rawData
+  return $ (parseFamily prefLang) <<< XML.parseLBS_ XML.def $ rawData
 
-parseFamily :: XML.Document -> [Patent.Citation]
-parseFamily xml = family
+parseFamily :: Text -> XML.Document -> Family
+parseFamily prefLang xml = family
   where
     cursor = XML.fromDocument xml
     exchangeDocuments = cursor $// XML.laxElement "exchange-document"
-    family = XMLDocDB.parseAttributesToCitation <$> exchangeDocuments
+    fID = headDef "" $ concat $ XML.attribute "family-id" <$> exchangeDocuments
+    fMembers = (extractBibliography prefLang) <$> exchangeDocuments
 
 -- | Searches EPO OPS for other 'Citation's that contain a recorded citation to the given 'Citation'
 getCitingPatentDocs :: Patent.Citation -> Session [Patent.Citation]

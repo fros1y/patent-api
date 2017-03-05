@@ -26,6 +26,11 @@ data Citation = Citation
   , _citationSpecialCase :: Maybe SpecialCase
   } deriving (Show, Eq, Ord)
 
+data Family = Family
+  { _familyID      :: Text
+  , _familyMembers :: Map Citation (Maybe Bibliography)
+  } deriving (Show)
+
 -- | Some Citation formats need special treatment for the EPO API, and so may be tagged at parse, etc.
 data SpecialCase
   = EPO_US_Pub_App Text
@@ -53,7 +58,7 @@ data Bibliography = Bibliography
   , _biblioTitle             :: Text
   , _biblioPatentCitations   :: [Citation]
   , _biblioAbstract          :: Text
-  , _familyID                :: Text
+  , _memberOfFamilyID        :: Text
   } deriving (Show)
 
 makeLenses ''CPCCode
@@ -61,3 +66,5 @@ makeLenses ''CPCCode
 makeLenses ''Citation
 
 makeLenses ''Bibliography
+
+makeLenses ''Family
