@@ -58,7 +58,7 @@ data Bibliography = Bibliography
   , _biblioTitle             :: Text
   , _biblioPatentCitations   :: [Citation]
   , _biblioAbstract          :: Text
-  , _memberOfFamilyID        :: Text
+  , _biblioFamilyID          :: Text
   } deriving (Show)
 
 makeLenses ''CPCCode

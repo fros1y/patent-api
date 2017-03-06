@@ -28,6 +28,7 @@ import           Control.Arrow
 import           Control.Lens                                   hiding ((&))
 import qualified Control.Monad.Catch                            as Catch
 import           Control.Monad.Logger                           (LogLevel (..))
+import qualified Data.Map.Lazy                                  as Map
 import           Data.Patent.Providers.EPO.Network
 import           Data.Patent.Providers.EPO.Parsers.Bibliography
 import qualified Data.Patent.Providers.EPO.Parsers.XMLDocDB     as XMLDocDB
@@ -47,19 +48,23 @@ getBibliography prefLang citation = do
   return $ (parseBibliography prefLang) <<< XML.parseLBS_ XML.def $ rawData
 
 -- | Retrieves 'Bibliography's related to a given 'Citation' by a simple family grouping in EPO OPS data.
-getFamilyBibliographies :: Text -> Patent.Citation -> Session Family
+getFamilyBibliographies :: Text -> Patent.Citation -> Session Patent.Family
 getFamilyBibliographies prefLang citation = do
   url <- buildURL $ familyData citation
   rawData <- throttledQuery url
   return $ (parseFamily prefLang) <<< XML.parseLBS_ XML.def $ rawData
 
-parseFamily :: Text -> XML.Document -> Family
+parseFamily :: Text -> XML.Document -> Patent.Family
 parseFamily prefLang xml = family
   where
     cursor = XML.fromDocument xml
     exchangeDocuments = cursor $// XML.laxElement "exchange-document"
-    fID = headDef "" $ concat $ XML.attribute "family-id" <$> exchangeDocuments
-    fMembers = (extractBibliography prefLang) <$> exchangeDocuments
+    fMembers = XMLDocDB.parseAttributesToCitation <$> exchangeDocuments
+    fBibs = (extractBibliography prefLang) <$> exchangeDocuments
+    fMap = Map.fromList $ zip fMembers (Just <$> fBibs)
+    fID = headDef "" $ fBibs ^.. traverse . Patent.biblioFamilyID
+    family =
+      Patent.Family {Patent._familyID = fID, Patent._familyMembers = fMap}
 
 -- | Searches EPO OPS for other 'Citation's that contain a recorded citation to the given 'Citation'
 getCitingPatentDocs :: Patent.Citation -> Session [Patent.Citation]

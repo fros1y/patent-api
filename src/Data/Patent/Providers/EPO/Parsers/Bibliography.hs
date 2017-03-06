@@ -1,5 +1,6 @@
 module Data.Patent.Providers.EPO.Parsers.Bibliography
   ( parseBibliography
+  , extractBibliography
   ) where
 
 import           Data.Maybe                                 (fromJust)
@@ -139,5 +140,5 @@ extractBibliography lang cursor = bib
       , Patent._biblioTitle = fromJust title
       , Patent._biblioAbstract = T.intercalate (T.pack "\n") abstract
       , Patent._biblioPatentCitations = patentCitations
-      , Patent._familyID = familyID'
+      , Patent._biblioFamilyID = familyID'
       }
