@@ -46,7 +46,8 @@ data CPCCode = CPCCode
   } deriving (Show, Eq, Ord)
 
 data Bibliography = Bibliography
-  { _biblioPubDate           :: Date
+  { _biblioCitation          :: Citation
+  , _biblioPubDate           :: Date
   , _biblioIPCs              :: [Text]
   , _biblioCPCs              :: [CPCCode]
   , _biblioAppDate           :: Date

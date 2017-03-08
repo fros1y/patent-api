@@ -52,6 +52,7 @@ parseBibliography lang xml = extractBibliography lang $ XML.fromDocument xml
 extractBibliography :: Text -> XML.Cursor -> Patent.Bibliography
 extractBibliography lang cursor = bib
   where
+    citation = parseAttributesToCitation cursor
     pubDate =
       headDef "" $
       cursor $// XML.laxElement "publication-reference" &//
@@ -129,6 +130,7 @@ extractBibliography lang cursor = bib
     bib =
       Patent.Bibliography
       { Patent._biblioPubDate = pubDate
+      , Patent._biblioCitation = citation
       , Patent._biblioIPCs = ipcs
       , Patent._biblioCPCs = cpcs
       , Patent._biblioAppDate = appDate
