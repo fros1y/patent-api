@@ -61,7 +61,8 @@ publishedData service citation =
     searchKey = buildPublicationKey citation
 
 familyData :: Patent.Citation -> Text
-familyData citation = "/rest-services/published-data/publication/" <> searchKey
+familyData citation =
+  "/rest-services/family/publication/epodoc/" <> searchKey <> "/biblio"
   where
     searchKey = Citation.asEPODOC citation
 
