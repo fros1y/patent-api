@@ -45,11 +45,14 @@ lookup prefLang familyScope citation = do
     if familyScope
       then familyData citation
       else publishedData "biblio" citation
-  rawData <- throttledQuery url
-  let xml = XML.parseLBS_ XML.def $ rawData
-      cursor = XML.fromDocument xml
-      exchangeDocuments = cursor $// XML.laxElement "exchange-document"
-  return $ (extractBibliography prefLang) <$> exchangeDocuments
+  rawData' <- Catch.tryJust handleNoResults $ throttledQuery url
+  case rawData' of
+    Left _ -> return []
+    Right rawData -> do
+      let xml = XML.parseLBS_ XML.def rawData
+          cursor = XML.fromDocument xml
+          exchangeDocuments = cursor $// XML.laxElement "exchange-document"
+      return $ (extractBibliography prefLang) <$> exchangeDocuments
 
 -- | Searches EPO OPS for other 'Citation's that contain a recorded citation to the given 'Citation'
 findCitingDocuments :: Patent.Citation -> Session [Patent.Citation]
