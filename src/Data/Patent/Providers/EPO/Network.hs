@@ -82,7 +82,11 @@ initialThrottlingState =
 
 initialState :: SessionState
 initialState =
-  SessionState {_oauth2Token = Nothing, _throttling = initialThrottlingState}
+  SessionState
+  { _oauth2Token = Nothing
+  , _throttling = initialThrottlingState
+  , _credentials = Credentials "" ""
+  }
 
 v31 :: Text
 v31 = "https://ops.epo.org/3.1"
@@ -111,12 +115,8 @@ withSession creds endpoint logLevel k =
     runStateT
       (runReaderT
          (runStderrLoggingT $ filterLogger logFilter $ runSession k)
-         Settings
-         { _credentials = creds
-         , _serviceEndpoint = endpoint
-         , _wreqSession = wreqSess
-         })
-      initialState
+         Settings {_serviceEndpoint = endpoint, _wreqSession = wreqSess})
+      (initialState & credentials .~ creds)
   where
     logFilter _ level = level >= logLevel
 
@@ -144,10 +144,10 @@ requestOAuthToken client_id client_secret = do
 
 authenticate :: Session OAuth2Token
 authenticate = do
-  settings <- ask
+  creds <- Lens.use credentials
   token <- Lens.use oauth2Token
-  let client_id = settings ^. credentials . consumerKey
-      client_secret = settings ^. credentials . secretKey
+  let client_id = creds ^. consumerKey
+      client_secret = creds ^. secretKey
   case token of
     Just t -> return t
     Nothing -> do

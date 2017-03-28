@@ -18,8 +18,7 @@ newtype OAuth2Token = OAuth2Token
   } deriving (Show, Eq)
 
 data Settings = Settings
-  { _credentials     :: Credentials
-  , _serviceEndpoint :: Text
+  { _serviceEndpoint :: Text
   , _wreqSession     :: Wreq.Session
   } deriving (Show)
 
@@ -31,6 +30,7 @@ data Credentials = Credentials
 data SessionState = SessionState
   { _oauth2Token :: Maybe OAuth2Token
   , _throttling  :: ThrottlingState
+  , _credentials :: Credentials
   } deriving (Show)
 
 data ThrottlingState = ThrottlingState
