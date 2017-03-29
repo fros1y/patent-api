@@ -12,6 +12,7 @@ Portability : POSIX
 module Data.Patent.Providers.EPO
   ( lookup
   , findCitingDocuments
+  , setCredentials
   -- * System types
   , Session
   , Credentials(..)
@@ -23,19 +24,27 @@ module Data.Patent.Providers.EPO
   , v32
   ) where
 
-import           Control.Lens                                   hiding ((&))
-import qualified Control.Monad.Catch                            as Catch
-import           Control.Monad.Logger                           (LogLevel (..))
-import           Data.Patent.Providers.EPO.Network
-import           Data.Patent.Providers.EPO.Parsers.Bibliography
-import qualified Data.Patent.Providers.EPO.Parsers.XMLDocDB     as XMLDocDB
-import           Data.Patent.Providers.EPO.Types
-import qualified Data.Patent.Types                              as Patent
-import           Data.String.Here
-import           Protolude
-import qualified Text.XML                                       as XML
-import           Text.XML.Cursor                                (($//))
-import qualified Text.XML.Cursor                                as XML
+import Control.Lens hiding ((&))
+import qualified Control.Monad.Catch as Catch
+import Control.Monad.Logger (LogLevel(..))
+import Data.Patent.Providers.EPO.Network
+import Data.Patent.Providers.EPO.Parsers.Bibliography
+import qualified Data.Patent.Providers.EPO.Parsers.XMLDocDB
+       as XMLDocDB
+import Data.Patent.Providers.EPO.Types
+import qualified Data.Patent.Types as Patent
+import Data.String.Here
+import Protolude
+import qualified Text.XML as XML
+import Text.XML.Cursor (($//))
+import qualified Text.XML.Cursor as XML
+
+setCredentials :: Credentials -> Session Bool
+setCredentials c = do
+  credentials .= c
+  oauth2Token .= Nothing
+  (results :: Either SomeException OAuth2Token) <- Catch.try authenticate
+  return $ either (const False) (const True) results
 
 -- | Queries EPO OPS for one or more 'Bibliography' records based on a preferred language code, whether or not to pull the full family, and a 'Citation'.
 lookup :: Text -> Bool -> Patent.Citation -> Session [Patent.Bibliography]
