@@ -151,7 +151,7 @@ downloadCitationInstance :: PageProgress
 downloadCitationInstance progressFn basePath citeInstance = do
   let pages = [1 .. citeInstance ^. EPO.numPages]
       epokey = Format.asEPODOC $ citeInstance ^. EPO.fullCitation
-      output = epokey <> ".pdf"
+      output = (T.pack basePath) <> "/" <> epokey <> ".pdf"
   _ <-
     Temp.withTempDirectory basePath "pat-download." $ \tmpDir -> do
       mapM_
