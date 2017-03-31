@@ -144,13 +144,16 @@ silentProgress _ _ = return ()
 -- directory is removed.
 --
 -- The first parameter, PageProgress, allows for easier progress reporting.
-downloadCitationInstance :: PageProgress -> EPO.Instance -> EPO.Session ()
-downloadCitationInstance progressFn citeInstance = do
+downloadCitationInstance :: PageProgress
+                         -> FilePath
+                         -> EPO.Instance
+                         -> EPO.Session ()
+downloadCitationInstance progressFn basePath citeInstance = do
   let pages = [1 .. citeInstance ^. EPO.numPages]
       epokey = Format.asEPODOC $ citeInstance ^. EPO.fullCitation
       output = epokey <> ".pdf"
   _ <-
-    Temp.withTempDirectory "." "pat-download." $ \tmpDir -> do
+    Temp.withTempDirectory basePath "pat-download." $ \tmpDir -> do
       mapM_
         (downloadCitationPageAsPDF
            (citeInstance ^. EPO.fullCitation)
