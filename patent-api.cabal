@@ -1,5 +1,5 @@
 name:                patent-api
-version:             0.1.1.0
+version:             0.1.1.1
 -- synopsis:
 -- description:
 homepage:            https://github.com/fros1y/patent-api#readme
@@ -7,7 +7,7 @@ license:             AGPL-3
 license-file:        LICENSE
 author:              Martin Galese
 maintainer:          Martin Galese
-copyright:           2017 Martin Galese
+copyright:           2019 Martin Galese
 category:            Patents, API
 build-type:          Simple
 extra-source-files:  README.md
@@ -42,7 +42,7 @@ library
                      , lens-aeson >= 1.0
                      , monad-logger
                      , parsec
-                     , protolude >= 0.1.6 && < 0.2
+                     , protolude >= 0.1.6 
                      , retry
                      , temporary
                      , text
