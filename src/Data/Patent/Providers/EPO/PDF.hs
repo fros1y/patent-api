@@ -13,6 +13,7 @@ Portability : POSIX
 module Data.Patent.Providers.EPO.PDF
   ( getCitationInstances
   , downloadCitationInstance
+  , streamCitationInstanceTIFF
   -- * Types and defaults
   , PageProgress
   , EPO.Instance
@@ -167,6 +168,16 @@ downloadCitationInstance progressFn basePath citeInstance = do
           Turtle.empty
   return ()
 
+
+streamCitationInstanceTIFF :: PageProgress
+                           -> EPO.Instance
+                           -> EPO.Session ([LByteString])
+streamCitationInstanceTIFF progressFn citeInstance = do
+  let pages = [1 .. citeInstance ^. EPO.numPages]
+  mapM (streamCitationPageAsTIFF
+        (citeInstance ^. EPO.fullCitation)
+        (progressFn (citeInstance ^. EPO.numPages))) pages
+
 writeBookmarks :: [EPO.Bookmark] -> FilePath -> IO ()
 writeBookmarks marks path = writeFile (path <> "/" <> "pdfmarks") contents
   where
@@ -190,6 +201,35 @@ downloadCitationPageAsPDF citation path progressFn page = do
         ".pdf"
   downloadFile url (T.unpack file)
   liftIO $ progressFn page
+
+downloadCitationPageAsTIFF :: Patent.Citation
+                          -> [Char]
+                          -> (CurrPage -> IO ())
+                          -> Int
+                          -> EPO.Session ()
+downloadCitationPageAsTIFF citation path progressFn page = do
+  url <- buildURL $ tiffData citation page
+  let file =
+        (T.pack path) <> "/" <> (Format.asEPODOC citation) <> "-" <>
+        (T.justifyRight 5 '0' (show page)) <>
+        ".tiff"
+  downloadFile url (T.unpack file)
+  liftIO $ progressFn page
+
+streamCitationPageAsTIFF :: Patent.Citation
+                          -> (CurrPage -> IO ())
+                          -> Int
+                          -> EPO.Session (LByteString)
+streamCitationPageAsTIFF citation progressFn page = do
+  url <- buildURL $ tiffData citation page
+  liftIO $ progressFn page
+  downloadStream url
+
+
+downloadStream :: Text -> EPO.Session(LByteString)
+downloadStream url = do
+  contents <- throttledQuery url
+  return contents
 
 downloadFile :: Text -> FilePath -> EPO.Session ()
 downloadFile url name = do

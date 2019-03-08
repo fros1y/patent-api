@@ -36,6 +36,18 @@ buildURL path = do
   settings <- ask
   return $ settings ^. serviceEndpoint <> path
 
+tiffData :: Patent.Citation -> Int -> Text
+tiffData citation pageNo =
+  "/rest-services/published-data/images/" <> imageLink <> ".tiff?Range=" <>
+  (show pageNo)
+  where
+    imageLink =
+      citation ^. Patent.citationCountry <> "/" <> citation ^.
+      Patent.citationSerial <>
+      "/" <>
+      (fromMaybe "%" $ citation ^. Patent.citationKind) <>
+      "/fullimage"
+
 imageData :: Patent.Citation -> Int -> Text
 imageData citation pageNo =
   "/rest-services/published-data/images/" <> imageLink <> ".pdf?Range=" <>
