@@ -14,6 +14,7 @@ module Data.Patent.Providers.EPO.PDF
   ( getCitationInstances
   , downloadCitationInstance
   , streamCitationInstanceTIFF
+  , streamCitationPageAsTIFF
   -- * Types and defaults
   , PageProgress
   , EPO.Instance
