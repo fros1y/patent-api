@@ -15,6 +15,7 @@ module Data.Patent.Providers.EPO.PDF
   , downloadCitationInstance
   , streamCitationInstanceTIFF
   , streamCitationPageAsTIFF
+  , streamCitationPageAsPDF
   -- * Types and defaults
   , PageProgress
   , EPO.Instance
@@ -202,6 +203,13 @@ downloadCitationPageAsPDF citation path progressFn page = do
         ".pdf"
   downloadFile url (T.unpack file)
   liftIO $ progressFn page
+
+streamCitationPageAsPDF :: Patent.Citation
+                          -> Int
+                          -> EPO.Session (LByteString)
+streamCitationPageAsPDF citation page = do
+  url <- buildURL $ imageData citation page
+  downloadStream url
 
 downloadCitationPageAsTIFF :: Patent.Citation
                           -> [Char]
