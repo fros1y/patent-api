@@ -23,6 +23,7 @@ module Data.Patent.Providers.EPO.PDF
   , EPO.fullCitation
   , EPO.bookmarkTitle
   , EPO.bookmarkPage
+  , EPO.bookmarkSections
   , silentProgress
   ) where
 
